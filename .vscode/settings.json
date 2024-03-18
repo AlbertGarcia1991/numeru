@@ -1,0 +1,139 @@
+{
+    "workbench.colorCustomizations": {
+        "[Default Dark+]": {
+            "debugConsole.infoForeground": "#ffffff",
+            "debugConsole.warningForeground": "#fddf00",
+            "debugConsole.errorForeground": "#69ba63",
+            "debugConsole.sourceForeground": "#c2c900",
+
+        },
+    },
+    "cSpell.words": [
+      "Aakash",
+      "Actuals",
+      "argmax",
+      "astype",
+      "autodeploy",
+      "Autohook",
+      "autolag",
+      "autolog",
+      "BBIH",
+      "boto",
+      "cmap",
+      "coeff",
+      "crossentropy",
+      "dataframe",
+      "figsize",
+      "fmin",
+      "fontsize",
+      "FSIZE",
+      "hyperas",
+      "idxs",
+      "imblearn",
+      "keras",
+      "levelname",
+      "levelno",
+      "localfiles",
+      "matplotlib",
+      "matshow",
+      "maxlag",
+      "maxpool",
+      "mflow",
+      "mlflow",
+      "MSIZE",
+      "ndarray",
+      "Neighbours",
+      "openset",
+      "optuna",
+      "OUTLENGTH",
+      "OUTMAP",
+      "PENLAYERLENGTH",
+      "preds",
+      "pvalue",
+      "pyll",
+      "pyplot",
+      "quantile",
+      "quniform",
+      "relu",
+      "remotefiles",
+      "selu",
+      "sklearn",
+      "softmax",
+      "softsign",
+      "standarize",
+      "standarized",
+      "subfolders",
+      "tflite",
+      "timeseries",
+      "trianing",
+      "tsfresh",
+      "WLENGTH",
+      "WLSTART",
+      "xlabel",
+      "ylabel"
+    ],
+    "editor.rulers": [
+        120
+    ],
+    "todo-tree.highlights.defaultHighlight": {
+        "icon": "alert",
+        "type": "text-and-comment",
+        "foreground": "black",
+        "opacity": 50,
+        "iconColour": "blue",
+        "gutterIcon": true
+      },
+      "todo-tree.highlights.customHighlight": {
+        "TODO": {
+          "icon": "checkbox",
+          "foreground": "yellow",
+          "iconColour": "yellow"
+        },
+        "DEPRECATED": {
+          "icon": "issue-draft",
+          "foreground": "hotpink",
+          "iconColour": "hotpink"
+        },
+        "FUTURE": {
+          "icon": "rocket",
+          "foreground": "mediumaquamarine",
+          "iconColour": "mediumaquamarine"
+        },
+        "LEARN": {
+          "icon": "book",
+          "foreground": "cornflowerblue",
+          "iconColour": "cornflowerblue"
+        },
+        "ASK": {
+          "icon": "cross-reference",
+          "foreground": "white",
+          "iconColour": "white"
+        },
+        "FIXME": {
+          "icon": "tools",
+          "foreground": "#FF7F50",
+          "iconColour": "#FF7F50"
+        },
+        "BUG": {
+          "icon": "bug",
+          "foreground": "crimson",
+          "iconColour": "crimson"
+        },
+        "WARNING": {
+          "icon": "alert",
+          "foreground": "orange",
+          "iconColour": "orange"
+        },
+      },
+      "todo-tree.general.tags": [
+        "TODO",
+        "DEPRECATED",
+        "FUTURE",
+        "LEARN",
+        "ASK",
+        "FIXME",
+        "BUG",
+        "WARNING",
+      ],
+      "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS).*(\\n\\s*//\\s{2,}.*)*"
+}

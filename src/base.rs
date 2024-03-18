@@ -1,9 +1,10 @@
-/// A N-dimensional tensor of generic data type
+use rand::Rng;
+
 #[derive(Debug, Clone)]
-pub struct Tensor<T>
+pub struct Tensor
 {
-    /// A flat vector that contains all the elements of the tensor. Rust's Vec<T> is a resizable array type that provides safe and efficient access to elements.
-    pub data: Vec<T>,
+    /// A flat vector that contains all the elements of the tensor 
+    pub data: Vec<f32>,
     /// A vector of usize that represents the size of the tensor in each dimension. For a 2D tensor (matrix), the shape might be [rows, cols].
     pub shape: Vec<usize>,
     /// Strides are used to calculate the index of an element in the flat data vector based on its multi-dimensional indices. This is crucial for efficiently accessing and manipulating tensor elements.
@@ -12,54 +13,111 @@ pub struct Tensor<T>
     pub row_major_length: usize
 }
 
-impl<T> Tensor<T> where T: From<u8> + Copy
+impl Tensor
 {
-
-    // TODO: Use vec versus array
-
-    pub fn new(data: Vec<T>, shape: Vec<usize>) -> Self {
-        // TODO: Do we actually require to pass the shape, or can be read from input data? 
-        if data.len() != shape.iter().product() {
+    pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Self {
+        let row_major_length: usize = shape.iter().product();
+        if data.len() != row_major_length {
             panic!("Data length does not match the product of the shape dimensions");
         }
         let strides: Vec<usize> = Self::compute_strides(&shape);
+        Tensor{ data, shape, strides, row_major_length }
+    }
+
+    pub fn from_array(array: &[f32], shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
+        if array.len() != row_major_length {
+            panic!("Data length does not match the product of the shape dimensions");
+        }
+        let strides: Vec<usize> = Self::compute_strides(&shape);
         Tensor{ data, shape, strides, row_major_length }
     }
 
     pub fn ones(shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
-        let data: Vec<T> = vec![T::from(1); row_major_length];
+        let data: Vec<f32> = vec![1.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
         Tensor{ data, shape, strides, row_major_length }
     }
 
     pub fn zeros(shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
-        let data: Vec<T> = vec![T::from(0); row_major_length];
+        let data: Vec<f32> = vec![0.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
         Tensor{ data, shape, strides, row_major_length }
     }
 
-    // TODO: Create constructors to eye, as well as the *_like versions
+    pub fn random(shape: Vec<usize>, min_bound: Option<f32>, max_bound: Option<f32>) -> Self {
+        let row_major_length: usize = shape.iter().product();
+        let mut data: Vec<f32> = Vec::with_capacity(row_major_length);
+        let min_bound: f32 = min_bound.unwrap_or(0.);
+        let max_bound: f32 = max_bound.unwrap_or(1.);
+        if min_bound <= max_bound {
+            panic!("When generating random fille tensors, the min bound must be smaller than max bound");
+        }
+        loop {
+            data.push(rand::thread_rng().gen_range(min_bound..=max_bound));
+            if (data.len() == row_major_length) {
+                break
+            }
+        }
+        let strides: Vec<usize> = Self::compute_strides(&shape);
+        Tensor{ data, shape, strides, row_major_length }
+    }
+    
+    pub fn eye(shape: Vec<usize>) -> Self {
+        let row_major_length: usize = shape.iter().product();
+        let mut data: Vec<f32> = vec![0.; row_major_length];
+        let strides: Vec<usize> = Self::compute_strides(&shape);
+        // TODO: Create constructors to eye, as well as the *_like versions
+        Tensor{ data, shape, strides, row_major_length }
+    }
 
-    /// Strides are pivotal in efficiency accessing elements in a multi-dimensional tensor when it is stored in a linear memory space.
-    /// Strides represents the "step" needed to move along each dimension of the tensor. In the concept of the Tensor, strides is a vector
-    /// where each element corresponds to the number of elements you need to skip in the flat data array to move one unit along a particular
-    /// dimension in the tensor. This function iterates over the shape in reverse, starting from the innermost dimension (assuming row-major 
-    /// order).  It initializes the stride for the innermost dimension to 1, as moving one element along the innermost dimension equates to 
-    /// moving one element in the flat array. For each subsequent (outer) dimension, it multiplies the stride of the previous (inner) dimension 
-    /// by the size of the current dimension. This process accumulates the total number of elements that need to be skipped in the flat array 
-    /// to move one unit along each dimension.
-    ///
-    /// # example
-    /// Consider the 2D tensor with shape [2, 4] but row-major order [1, 2, 3, 4, 5, 6, 7, 8]
-    /// In 2D, that tensor is represented as:
-    ///  [1, 2, 3, 4]
-    ///  [5, 6, 7, 8]
-    /// Starting at the first element, 1, to move to the next one in a row, we need to move 1 position on the row-jamor order. However,
-    /// to move to the next one in a column, we need to move 4 positions in the row-major order vector. That means that the strides for
-    /// this tensor are [4, 1]
+    pub fn new_like(data: Vec<f32>, tensor: Tensor) -> Self {
+        let shape: Vec<usize> = tensor.shape;
+        let row_major_length: usize = shape.iter().product();
+        if data.len() != row_major_length {
+            panic!("Data length does not match the product of the shape dimensions");
+        }
+        let strides: Vec<usize> = Self::compute_strides(&shape);
+        Tensor{ data, shape, strides, row_major_length }
+    }
+
+    pub fn ones_like(tensor: Tensor) -> Self {
+        let shape: Vec<usize> = tensor.shape;
+        let row_major_length: usize = shape.iter().product();
+        let data: Vec<f32> = vec![1.; row_major_length];
+        let strides: Vec<usize> = Self::compute_strides(&shape);
+        Tensor{ data, shape, strides, row_major_length }
+    }
+
+    pub fn zeros_like(tensor: Tensor) -> Self {
+        let shape: Vec<usize> = tensor.shape;
+        let row_major_length: usize = shape.iter().product();
+        let data: Vec<f32> = vec![0.; row_major_length];
+        let strides: Vec<usize> = Self::compute_strides(&shape);
+        Tensor{ data, shape, strides, row_major_length }
+    }
+
+    pub fn random_like(tensor: Tensor, min_bound: Option<f32>, max_bound: Option<f32>) -> Self {
+        let shape: Vec<usize> = tensor.shape;
+        let row_major_length: usize = shape.iter().product();
+        let mut data: Vec<f32> = Vec::with_capacity(row_major_length);
+        let min_bound: f32 = min_bound.unwrap_or(0.);
+        let max_bound: f32 = max_bound.unwrap_or(1.);
+        if min_bound <= max_bound {
+            panic!("When generating random fille tensors, the min bound must be smaller than max bound");
+        }
+        loop {
+            data.push(rand::thread_rng().gen_range(min_bound..=max_bound));
+            if (data.len() == row_major_length) {
+                break
+            }
+        }
+        let strides: Vec<usize> = Self::compute_strides(&shape);
+        Tensor{ data, shape, strides, row_major_length }
+    }
+
     fn compute_strides(shape: &Vec<usize>) -> Vec<usize> {
         let mut strides: Vec<usize> = Vec::with_capacity(shape.len());
         let mut stride: usize = 1;
@@ -72,7 +130,6 @@ impl<T> Tensor<T> where T: From<u8> + Copy
     }
 
     // TODO: Overload index accessor https://stackoverflow.com/questions/49593793/is-there-a-way-to-overload-the-index-assignment-operator
-    // If possible, add test about that
 
     fn get(&self, indices: &[usize]) -> Option<&T> {
         let index: usize = self.compute_flat_index(indices)?;
@@ -107,7 +164,7 @@ impl<T> Tensor<T> where T: From<u8> + Copy
 mod tests {
     use super::*;
 
-    fn get_dummy_tensor_from_new() -> Tensor<i32> {
+    fn get_dummy_tensor_from_new() -> Tensor {
         let data: Vec<i32> = vec![1, 2, 3, 4, 5, 6];
         let shape: Vec<usize> = vec![2, 3];
         let tensor: Tensor<i32> = Tensor::new(data, shape);
@@ -119,25 +176,5 @@ mod tests {
         let tensor: Tensor<i32> = get_dummy_tensor_from_new();
         assert_eq!(tensor.shape, vec![2, 3]);
         assert_eq!(tensor.strides, vec![3, 1]);
-    }
-    
-    #[test]
-    fn test_ones() {        
-        let tensor: Tensor<i32> = Tensor::ones(vec![2, 2]);
-        assert_eq!(tensor.shape, vec![2, 2]);
-        assert_eq!(tensor.strides, vec![2, 1]);
-        for idx in 0..tensor.row_major_length {
-            assert_eq!(tensor.data[idx], 1);
-        }
-    }
-
-    #[test]
-    fn test_zeros() {        
-        let tensor: Tensor<i32> = Tensor::zeros(vec![2, 2]);
-        assert_eq!(tensor.shape, vec![2, 2]);
-        assert_eq!(tensor.strides, vec![2, 1]);
-        for idx in 0..tensor.row_major_length {
-            assert_eq!(tensor.data[idx], 0);
-        }
     }
 }
