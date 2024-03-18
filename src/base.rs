@@ -1,4 +1,5 @@
 use rand::Rng;
+use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone)]
 pub struct Tensor
@@ -24,14 +25,7 @@ impl Tensor
         Tensor{ data, shape, strides, row_major_length }
     }
 
-    pub fn from_array(array: &[f32], shape: Vec<usize>) -> Self {
-        let row_major_length: usize = shape.iter().product();
-        if array.len() != row_major_length {
-            panic!("Data length does not match the product of the shape dimensions");
-        }
-        let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
-    }
+    // TODO: New from array
 
     pub fn ones(shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
@@ -57,7 +51,7 @@ impl Tensor
         }
         loop {
             data.push(rand::thread_rng().gen_range(min_bound..=max_bound));
-            if (data.len() == row_major_length) {
+            if data.len() == row_major_length {
                 break
             }
         }
@@ -65,11 +59,20 @@ impl Tensor
         Tensor{ data, shape, strides, row_major_length }
     }
     
-    pub fn eye(shape: Vec<usize>) -> Self {
+    pub fn eye(shape: Vec<usize>, shift: Option<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
+        let shift: usize = shift.unwrap_or(0);
+        if shift >= row_major_length {
+            panic!("Shift if bigger than the row-major length of the given array shape");
+        }
         let mut data: Vec<f32> = vec![0.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        // TODO: Create constructors to eye, as well as the *_like versions
+        let mut i: usize = shift;
+        while i < row_major_length {
+            data[0] = 1.;
+            let step: usize = shape.iter().sum();
+            i += step;
+        }
         Tensor{ data, shape, strides, row_major_length }
     }
 
@@ -83,7 +86,7 @@ impl Tensor
         Tensor{ data, shape, strides, row_major_length }
     }
 
-    pub fn ones_like(tensor: Tensor) -> Self {
+    pub fn ones_like(tensor: Self) -> Self {
         let shape: Vec<usize> = tensor.shape;
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![1.; row_major_length];
@@ -91,7 +94,7 @@ impl Tensor
         Tensor{ data, shape, strides, row_major_length }
     }
 
-    pub fn zeros_like(tensor: Tensor) -> Self {
+    pub fn zeros_like(tensor: Self) -> Self {
         let shape: Vec<usize> = tensor.shape;
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![0.; row_major_length];
@@ -99,7 +102,7 @@ impl Tensor
         Tensor{ data, shape, strides, row_major_length }
     }
 
-    pub fn random_like(tensor: Tensor, min_bound: Option<f32>, max_bound: Option<f32>) -> Self {
+    pub fn random_like(tensor: Self, min_bound: Option<f32>, max_bound: Option<f32>) -> Self {
         let shape: Vec<usize> = tensor.shape;
         let row_major_length: usize = shape.iter().product();
         let mut data: Vec<f32> = Vec::with_capacity(row_major_length);
@@ -126,30 +129,32 @@ impl Tensor
             stride *= dimension;
         }
         strides.reverse();
-        return strides;
+        strides
     }
 
-    // TODO: Overload index accessor https://stackoverflow.com/questions/49593793/is-there-a-way-to-overload-the-index-assignment-operator
-
-    fn get(&self, indices: &[usize]) -> Option<&T> {
-        let index: usize = self.compute_flat_index(indices)?;
-        return self.data.get(index);
+    fn get(self, idx: &[usize]) -> f32 {
+        let length_idx: usize = idx.len();
+        if self.shape.len() != length_idx {
+            panic!("Cannot access to the request index, no matching dimensions");
+        }
+        let flat_idx: usize = idx.iter().zip(self.shape.iter()).map(|(x, y)| x * y).sum();
+        self.data[flat_idx]
     }
 
-    fn compute_flat_index(&self, indices: &[usize]) -> Option<usize> {
-        if indices.len() != self.shape.len() {
-            return None;
-        }
-        
-        let mut flat_index = 0;
-        for (i, &idx) in indices.iter().enumerate() {
-            if idx >= self.shape[i] {
-                return None;
-            }
-            flat_index += self.strides[i] * idx;
-        }
+    fn len(self) -> usize {
+        self.shape[0]
+    }
 
-        return Some(flat_index);
+    fn transpose(mut self) {
+        self.strides = self.strides.into_iter().rev().collect();
+    }
+
+    fn reshape(mut self, new_shape: Vec<usize>) {
+        let target_row_major_length: usize = new_shape.iter().product();
+        if self.row_major_length != target_row_major_length {
+            panic!("Cannot reshape the Tensor, shapes not compatible");
+        }
+        self.strides = new_shape;
     }
 
     // OVERLOADING
