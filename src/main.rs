@@ -1,4 +1,5 @@
-mod base;
+mod algebra;
+mod tensor;
 
 fn main() {
     let v: Vec<[i32; 3]> = vec![[1, 2, 3], [4, 5, 6]];

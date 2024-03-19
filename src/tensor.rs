@@ -1,29 +1,31 @@
-use std::ops;
 
 use rand::Rng;
 
 #[derive(Debug, Clone)]
-pub struct Tensor
-{
-    /// A flat vector that contains all the elements of the tensor 
+pub struct Tensor {
+    /// A flat vector that contains all the elements of the tensor
     pub data: Vec<f32>,
     /// A vector of usize that represents the size of the tensor in each dimension. For a 2D tensor (matrix), the shape might be [rows, cols].
     pub shape: Vec<usize>,
     /// Strides are used to calculate the index of an element in the flat data vector based on its multi-dimensional indices. This is crucial for efficiently accessing and manipulating tensor elements.
     pub strides: Vec<usize>,
     /// Row-major length is the length of the flattened tensor
-    pub row_major_length: usize
+    pub row_major_length: usize,
 }
 
-impl Tensor
-{
+impl Tensor {
     pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
         if data.len() != row_major_length {
             panic!("Data length does not match the product of the shape dimensions");
         }
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     // TODO: New from array
@@ -32,21 +34,36 @@ impl Tensor
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![1.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn zeros(shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![0.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn fill(shape: Vec<usize>, fill_value: f32) -> Self {
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![fill_value; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn random(shape: Vec<usize>, min_bound: Option<f32>, max_bound: Option<f32>) -> Self {
@@ -60,13 +77,18 @@ impl Tensor
         loop {
             data.push(rand::thread_rng().gen_range(min_bound..=max_bound));
             if data.len() == row_major_length {
-                break
+                break;
             }
         }
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
-    
+
     pub fn eye(shape: Vec<usize>, shift: Option<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
         let shift: usize = shift.unwrap_or(0);
@@ -84,7 +106,12 @@ impl Tensor
             let step: usize = strides.iter().sum();
             i += step;
         }
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn ones_like(tensor: &Self) -> Self {
@@ -92,7 +119,12 @@ impl Tensor
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![1.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn zeros_like(tensor: &Self) -> Self {
@@ -100,7 +132,12 @@ impl Tensor
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![0.; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn fill_like(tensor: &Self, fill_value: f32) -> Self {
@@ -108,7 +145,12 @@ impl Tensor
         let row_major_length: usize = shape.iter().product();
         let data: Vec<f32> = vec![fill_value; row_major_length];
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     pub fn random_like(tensor: &Self, min_bound: Option<f32>, max_bound: Option<f32>) -> Self {
@@ -122,12 +164,17 @@ impl Tensor
         }
         loop {
             data.push(rand::thread_rng().gen_range(min_bound..=max_bound));
-            if (data.len() == row_major_length) {
-                break
+            if data.len() == row_major_length {
+                break;
             }
         }
         let strides: Vec<usize> = Self::compute_strides(&shape);
-        Tensor{ data, shape, strides, row_major_length }
+        Tensor {
+            data,
+            shape,
+            strides,
+            row_major_length,
+        }
     }
 
     fn get(&self, idx: &[usize]) -> f32 {
@@ -135,10 +182,14 @@ impl Tensor
         if self.shape.len() != length_idx {
             panic!("Cannot access to the request index, no matching dimensions");
         }
-        let flat_idx: usize = idx.iter().zip(self.strides.iter()).map(|(x, y)| x * y).sum();
+        let flat_idx: usize = idx
+            .iter()
+            .zip(self.strides.iter())
+            .map(|(x, y)| x * y)
+            .sum();
         self.data[flat_idx]
     }
-    
+
     fn len(self) -> usize {
         self.shape[0]
     }
@@ -148,12 +199,12 @@ impl Tensor
         new_shape.reverse();
         Tensor::new(self.data, new_shape)
     }
-    
+
     fn transpose(&mut self) {
         self.shape.reverse();
         self.strides = Self::compute_strides(&self.shape);
     }
-    
+
     fn reshape(mut self, new_shape: Vec<usize>) {
         let target_row_major_length: usize = new_shape.iter().product();
         if self.row_major_length != target_row_major_length {
@@ -172,193 +223,216 @@ impl Tensor
         strides.reverse();
         strides
     }
-    
 }
 
-// TODO: Comparisons
+mod tensor_overridings {
+    use super::Tensor;
+    use std::ops;
 
-impl std::fmt::Display for Tensor {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?} (Shape: {:?})", self.data, self.shape)
-    }
-}
-
-impl ops::Add<Tensor> for Tensor {
-    type Output = Self;
-    fn add(self, _rhs: Tensor) -> Self::Output {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for addition");
-        }
-        let data: Vec<f32> = self.data.iter().zip(_rhs.data.iter()).map(|(a, b)| a + b).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::Add<f32> for Tensor {
-    type Output = Self;
-    fn add(self, _rhs: f32) -> Self::Output {
-        let data: Vec<f32> = self.data.iter().map(|&x| x + _rhs).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::AddAssign<Tensor> for Tensor {
-    fn add_assign(&mut self, _rhs: Self) {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for addition");
-        }
-        for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
-            *a += b;
+    impl std::fmt::Display for Tensor {
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(f, "{:?} (Shape: {:?})", self.data, self.shape)
         }
     }
-}
 
-impl ops::AddAssign<f32> for Tensor {
-    fn add_assign(&mut self, _rhs: f32) {
-        for a in self.data.iter_mut() {
-            *a += _rhs;
+    impl ops::Add<Tensor> for Tensor {
+        type Output = Self;
+        fn add(self, _rhs: Tensor) -> Self::Output {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for addition");
+            }
+            let data: Vec<f32> = self
+                .data
+                .iter()
+                .zip(_rhs.data.iter())
+                .map(|(a, b)| a + b)
+                .collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::Add<f32> for Tensor {
+        type Output = Self;
+        fn add(self, _rhs: f32) -> Self::Output {
+            let data: Vec<f32> = self.data.iter().map(|&x| x + _rhs).collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::AddAssign<Tensor> for Tensor {
+        fn add_assign(&mut self, _rhs: Self) {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for addition");
+            }
+            for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
+                *a += b;
+            }
+        }
+    }
+
+    impl ops::AddAssign<f32> for Tensor {
+        fn add_assign(&mut self, _rhs: f32) {
+            for a in self.data.iter_mut() {
+                *a += _rhs;
+            }
+        }
+    }
+
+    impl ops::Sub<Tensor> for Tensor {
+        type Output = Self;
+        fn sub(self, _rhs: Tensor) -> Self::Output {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for subtraction");
+            }
+            let data: Vec<f32> = self
+                .data
+                .iter()
+                .zip(_rhs.data.iter())
+                .map(|(a, b)| a - b)
+                .collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::Sub<f32> for Tensor {
+        type Output = Self;
+        fn sub(self, _rhs: f32) -> Self::Output {
+            let data = self.data.iter().map(|&x| x - _rhs).collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::SubAssign<Tensor> for Tensor {
+        fn sub_assign(&mut self, _rhs: Self) {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for subtraction");
+            }
+            for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
+                *a -= b;
+            }
+        }
+    }
+
+    impl ops::SubAssign<f32> for Tensor {
+        fn sub_assign(&mut self, _rhs: f32) {
+            for a in self.data.iter_mut() {
+                *a -= _rhs;
+            }
+        }
+    }
+
+    impl ops::Mul<Tensor> for Tensor {
+        type Output = Self;
+        fn mul(self, _rhs: Tensor) -> Self::Output {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for multiplication");
+            }
+            let data: Vec<f32> = self
+                .data
+                .iter()
+                .zip(_rhs.data.iter())
+                .map(|(a, b)| a * b)
+                .collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::Mul<f32> for Tensor {
+        type Output = Self;
+        fn mul(self, _rhs: f32) -> Self::Output {
+            let data = self.data.iter().map(|&x| x * _rhs).collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::MulAssign<Tensor> for Tensor {
+        fn mul_assign(&mut self, _rhs: Self) {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for multiplication");
+            }
+            for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
+                *a *= b;
+            }
+        }
+    }
+
+    impl ops::MulAssign<f32> for Tensor {
+        fn mul_assign(&mut self, _rhs: f32) {
+            for a in self.data.iter_mut() {
+                *a *= _rhs;
+            }
+        }
+    }
+
+    impl ops::Div<Tensor> for Tensor {
+        type Output = Self;
+        fn div(self, _rhs: Tensor) -> Self::Output {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for multiplication");
+            }
+            let data: Vec<f32> = self
+                .data
+                .iter()
+                .zip(_rhs.data.iter())
+                .map(|(a, b)| a / b)
+                .collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::Div<f32> for Tensor {
+        type Output = Self;
+        fn div(self, _rhs: f32) -> Self::Output {
+            let data = self.data.iter().map(|&x| x / _rhs).collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::DivAssign<Tensor> for Tensor {
+        fn div_assign(&mut self, _rhs: Self) {
+            if self.shape != _rhs.shape {
+                panic!("Shapes do not match for multiplication");
+            }
+            for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
+                *a /= b;
+            }
+        }
+    }
+
+    impl ops::DivAssign<f32> for Tensor {
+        fn div_assign(&mut self, _rhs: f32) {
+            for a in self.data.iter_mut() {
+                *a /= _rhs;
+            }
+        }
+    }
+
+    impl ops::BitXor<f32> for Tensor {
+        type Output = Self;
+        fn bitxor(self, _rhs: f32) -> Self::Output {
+            let data: Vec<f32> = self.data.iter().map(|&x| x.powf(_rhs)).collect();
+            Tensor::new(data, self.shape)
+        }
+    }
+
+    impl ops::BitXorAssign<f32> for Tensor {
+        fn bitxor_assign(&mut self, _rhs: f32) {
+            for a in self.data.iter_mut() {
+                *a = a.powf(_rhs);
+            }
+        }
+    }
+
+    impl ops::Neg for Tensor {
+        type Output = Self;
+        fn neg(self) -> Self::Output {
+            let data: Vec<f32> = self.data.iter().map(|&x| -x).collect();
+            Tensor::new(data, self.shape)
         }
     }
 }
 
-impl ops::Sub<Tensor> for Tensor {
-    type Output = Self;
-    fn sub(self, _rhs: Tensor) -> Self::Output {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for subtraction");
-        }
-        let data: Vec<f32> = self.data.iter().zip(_rhs.data.iter()).map(|(a, b)| a - b).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::Sub<f32> for Tensor {
-    type Output = Self;
-    fn sub(self, _rhs: f32) -> Self::Output {
-        let data = self.data.iter().map(|&x| x - _rhs).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::SubAssign<Tensor> for Tensor {
-    fn sub_assign(&mut self, _rhs: Self) {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for subtraction");
-        }
-        for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
-            *a -= b;
-        }
-    }
-}
-
-impl ops::SubAssign<f32> for Tensor {
-    fn sub_assign(&mut self, _rhs: f32) {
-        for a in self.data.iter_mut() {
-            *a -= _rhs;
-        }
-    }
-}
-
-impl ops::Mul<Tensor> for Tensor {
-    type Output = Self;
-    fn mul(self, _rhs: Tensor) -> Self::Output {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for multiplication");
-        }
-        let data: Vec<f32> = self.data.iter().zip(_rhs.data.iter()).map(|(a, b)| a * b).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::Mul<f32> for Tensor {
-    type Output = Self;
-    fn mul(self, _rhs: f32) -> Self::Output {
-        let data = self.data.iter().map(|&x| x * _rhs).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::MulAssign<Tensor> for Tensor {
-    fn mul_assign(&mut self, _rhs: Self) {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for multiplication");
-        }
-        for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
-            *a *= b;
-        }
-    }
-}
-
-impl ops::MulAssign<f32> for Tensor {
-    fn mul_assign(&mut self, _rhs: f32) {
-        for a in self.data.iter_mut() {
-            *a *= _rhs;
-        }
-    }
-}
-
-impl ops::Div<Tensor> for Tensor {
-    type Output = Self;
-    fn div(self, _rhs: Tensor) -> Self::Output {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for multiplication");
-        }
-        let data: Vec<f32> = self.data.iter().zip(_rhs.data.iter()).map(|(a, b)| a / b).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::Div<f32> for Tensor {
-    type Output = Self;
-    fn div(self, _rhs: f32) -> Self::Output {
-        let data = self.data.iter().map(|&x| x / _rhs).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::DivAssign<Tensor> for Tensor {
-    fn div_assign(&mut self, _rhs: Self) {
-        if self.shape != _rhs.shape {
-            panic!("Shapes do not match for multiplication");
-        }
-        for (a, b) in self.data.iter_mut().zip(_rhs.data.iter()) {
-            *a /= b;
-        }
-    }
-}
-
-impl ops::DivAssign<f32> for Tensor {
-    fn div_assign(&mut self, _rhs: f32) {
-        for a in self.data.iter_mut() {
-            *a /= _rhs;
-        }
-    }
-}
-
-impl ops::BitXor<f32> for Tensor {
-    type Output = Self;
-    fn bitxor(self, _rhs: f32) -> Self::Output {
-        let data: Vec<f32> = self.data.iter().map(|&x| x.powf(_rhs)).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
-impl ops::BitXorAssign<f32> for Tensor {
-    fn bitxor_assign(&mut self, _rhs: f32) {
-        for a in self.data.iter_mut() {
-            *a = a.powf(_rhs);
-        }
-    }
-}
-
-impl ops::Neg for Tensor {
-    type Output = Self;
-    fn neg(self) -> Self::Output {
-        let data: Vec<f32> = self.data.iter().map(|&x| -x).collect();
-        Tensor::new(data, self.shape)
-    }
-}
-
+// TODO: Comparisons -> Mask
 // TODO: Override ^ between tensors as dot product
 // TODO: Override % between tensors as scalar product
 // TODO: Override & between tensors as angle for each dimension
@@ -369,14 +443,14 @@ impl ops::Neg for Tensor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     fn get_dummy_tensor_from_new() -> Tensor {
         let data: Vec<f32> = vec![1., 2., 3., 4., 5., 6.];
         let shape: Vec<usize> = vec![2, 3];
         let tensor: Tensor = Tensor::new(data, shape);
         tensor
     }
-    
+
     #[test]
     fn test_new_attributes() {
         let tensor: Tensor = get_dummy_tensor_from_new();
@@ -392,7 +466,7 @@ mod tests {
         let tensor: Tensor = Tensor::ones(vec![3, 2]);
         assert_eq!(tensor.data, vec![1.; 6]);
     }
-    
+
     #[test]
     fn test_new_zeros() {
         let tensor: Tensor = Tensor::zeros(vec![3]);
@@ -440,7 +514,10 @@ mod tests {
     #[test]
     fn test_new_random() {
         let tensor: Tensor = Tensor::random(vec![1000], Some(0.5), None);
-        tensor.data.iter().for_each(|x: &f32| assert!(*x >= 0.5 && *x <= 1.));
+        tensor
+            .data
+            .iter()
+            .for_each(|x: &f32| assert!(*x >= 0.5 && *x <= 1.));
     }
 
     #[test]
@@ -479,7 +556,7 @@ mod tests {
         assert_eq!(tensor_dummy.get(&[1, 1]), 5.);
         assert_eq!(tensor_dummy.get(&[1, 2]), 6.);
     }
-    
+
     #[test]
     fn test_len() {
         let tensor_dummy: Tensor = get_dummy_tensor_from_new();
