@@ -13,6 +13,17 @@ pub struct Tensor {
     pub row_major_length: usize,
 }
 
+pub struct TensorMask {
+    /// A flat vector that contains all the Boolean elements of the tensor
+    pub data: Vec<bool>,
+    /// A vector of usize that represents the size of the tensor in each dimension. For a 2D tensor (matrix), the shape might be [rows, cols].
+    pub shape: Vec<usize>,
+    /// Strides are used to calculate the index of an element in the flat data vector based on its multi-dimensional indices. This is crucial for efficiently accessing and manipulating tensor elements.
+    pub strides: Vec<usize>,
+    /// Row-major length is the length of the flattened tensor
+    pub row_major_length: usize,
+}
+
 impl Tensor {
     pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Self {
         let row_major_length: usize = shape.iter().product();
