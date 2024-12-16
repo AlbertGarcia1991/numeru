@@ -17,7 +17,7 @@ mod tests {
 
     #[test]
     fn create() {
-        let a: ArrayStatic = ArrayStatic { capacity: 4};
+        let a: ArrayStatic = ArrayStatic { capacity: 4 };
         assert_eq!(a.capacity, 4);
     }
 }
