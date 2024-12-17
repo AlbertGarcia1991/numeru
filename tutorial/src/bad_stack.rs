@@ -88,31 +88,23 @@ impl Drop for List {
 }
 
 
-// fn main() {
-// }
+#[test]
+// cfg indicates that test module only compiled if running 'cargo test'
+fn basics() {
+    let mut list = List::new();
 
-mod test {
-    use super::List;
+    assert_eq!(list.pop(), None);
 
-    #[cfg(test)]
-    // cfg indicates that test module only compiled if running 'cargo test'
-    fn basics() {
-        let mut list = List::new();
+    list.push(1);
+    list.push(2);
+    list.push(3);
 
-        assert_eq!(list.pop(), None);
+    assert_eq!(list.pop(), Some(3));
+    assert_eq!(list.pop(), Some(2));
 
-        list.push(1);
-        list.push(2);
-        list.push(3);
+    list.push(4);
 
-        assert_eq!(list.pop(), Some(3));
-        assert_eq!(list.pop(), Some(2));
-
-        list.push(4);
-
-        assert_eq!(list.pop(), Some(4));
-        assert_eq!(list.pop(), Some(1));
-        assert_eq!(list.pop(), None);
-
-    }
+    assert_eq!(list.pop(), Some(4));
+    assert_eq!(list.pop(), Some(1));
+    assert_eq!(list.pop(), None);
 }

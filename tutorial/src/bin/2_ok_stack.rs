@@ -1,5 +1,0 @@
-// THIS IS A BADLY IMPLEMENTED LINKED LIST (STACK)
-
-
-fn main() {
-}
