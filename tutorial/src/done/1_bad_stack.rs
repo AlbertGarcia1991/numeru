@@ -1,3 +1,5 @@
+// THIS IS A BADLY IMPLEMENTED LINKED LIST (STACK)
+
 /*
 There are 3 primary forms that self can take: self, &mut self, and &self.
 These 3 forms represent the three primary forms of ownership in Rust:
@@ -72,8 +74,22 @@ impl List {
     }
 }
 
-fn main() {
+impl Drop for List {
+    fn drop(&mut self) {
+        let mut cur_link = mem::replace(&mut self.head, Link::Nil);
+        // `while let` == "do this thing until this pattern doesn't match"
+        while let Link::More(mut boxed_node) = cur_link {
+            cur_link = mem::replace(&mut boxed_node.next, Link::Nil);
+            // boxed_node goes out of scope and gets dropped here;
+            // but its Node's `next` field has been set to Link::Nil
+            // so no unbounded recursion occurs.
+        }
+    }
 }
+
+
+// fn main() {
+// }
 
 mod test {
     use super::List;
