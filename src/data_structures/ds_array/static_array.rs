@@ -47,6 +47,14 @@ impl StaticArray {
     pub fn new_zeros(shape: Box<[usize]>) -> Self {
         Self::_new_array(0., shape)
     }
+
+    pub fn new_ones(shape: Box<[usize]>) -> Self {
+        Self::_new_array(1., shape)
+    }
+
+    pub fn new_fill(shape: Box<[usize]>, fill_value:f32) -> Self {
+        Self::_new_array(fill_value, shape)
+    }
 }
 
 #[cfg(test)]
@@ -74,6 +82,34 @@ mod tests {
             shape: Box::new([1, 2]),
         };
         let zero_array: StaticArray = StaticArray::new_zeros(Box::new([1, 2]));
+        assert_eq!(ref_array.capacity, zero_array.capacity);
+        assert_eq!(ref_array.data, zero_array.data);
+        assert_eq!(ref_array.shape, zero_array.shape);
+    }
+
+    #[test]
+    fn create_static_array_with_ones() {
+        let values: Box<[f32]> = Box::new([1., 1., 1., 1.]);
+        let ref_array: StaticArray = StaticArray {
+            capacity: 4,
+            data: values,
+            shape: Box::new([2, 2]),
+        };
+        let zero_array: StaticArray = StaticArray::new_ones(Box::new([2, 2]));
+        assert_eq!(ref_array.capacity, zero_array.capacity);
+        assert_eq!(ref_array.data, zero_array.data);
+        assert_eq!(ref_array.shape, zero_array.shape);
+    }
+
+    #[test]
+    fn create_static_array_with_fill() {
+        let values: Box<[f32]> = Box::new([3.14, 3.14]);
+        let ref_array: StaticArray = StaticArray {
+            capacity: 2,
+            data: values,
+            shape: Box::new([2, 1]),
+        };
+        let zero_array: StaticArray = StaticArray::new_fill(Box::new([2, 1]), 3.14);
         assert_eq!(ref_array.capacity, zero_array.capacity);
         assert_eq!(ref_array.data, zero_array.data);
         assert_eq!(ref_array.shape, zero_array.shape);
