@@ -1,1 +1,1 @@
-pub mod array_static;
+pub mod static_array;
