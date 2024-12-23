@@ -2,12 +2,6 @@
 /// variables), of same memory size, each identified by at least one array index or key. The key
 /// property that defines the array as static is the fact of having a fixed length (or size) defined
 /// when is created, whether or not the elements inside are immutable.
-///
-/// Hence, we will define a static array as a struct with the following attributes:
-///     - capacity (mandatory): usize indicating the amount of elements to be stored.
-///     - data (mandatory): Box<[f32]> containing the value of the elements.
-///     - shape (optional): [usize; N] View of the array. By default is 1D, hence, [usize; 1].
-///
 use std::alloc::{alloc, Layout};
 
 struct StaticArray {
@@ -78,6 +72,23 @@ impl StaticArray {
             shape,
         }
     }
+
+    pub fn get_at() -> f32 {
+        3.14
+    }
+
+    // pub fn get_slice() -> StaticArray {
+
+    // }
+
+    // pub fn get_from_to() -> StaticArray {
+
+    // }
+
+    // pub fn get_view() -> StaticArray {
+
+    // }
+
 }
 
 #[cfg(test)]
@@ -158,5 +169,20 @@ mod tests {
         assert_eq!(ref_array.capacity, array.capacity);
         assert_eq!(ref_array.data, array.data);
         assert_eq!(ref_array.shape, array.shape);
+    }
+
+    #[test]
+    fn get_static_array_element() {
+        let array: StaticArray = StaticArray {
+            capacity: 6,
+            data: Box::new([1., 2., 3., 4., 5., 6.]),
+            shape: Box::new([2, 3]),
+        };
+        assert_eq!(array.get_at([0, 0]), 1.);
+        assert_eq!(array.get_at([0, 1]), 2.);
+        assert_eq!(array.get_at([0, 2]), 3.);
+        assert_eq!(array.get_at([1, 0]), 4.);
+        assert_eq!(array.get_at([1, 1]), 5.);
+        assert_eq!(array.get_at([1, 2]), 6.);
     }
 }
