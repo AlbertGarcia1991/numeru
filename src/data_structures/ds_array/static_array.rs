@@ -2,6 +2,7 @@
 /// variables), of same memory size, each identified by at least one array index or key. The key
 /// property that defines the array as static is the fact of having a fixed length (or size) defined
 /// when is created, whether or not the elements inside are immutable.
+#[derive(Debug)]
 struct StaticArray {
     capacity: usize,
     data: Vec<f32>,
@@ -19,7 +20,7 @@ impl StaticArray {
         }
     }
 
-    fn _check_shape_capacity_match(_capacity: &usize, _shape: &[usize]) -> bool{
+    fn _check_shape_capacity_match(_capacity: &usize, _shape: &[usize]) -> bool {
         let shape_product: usize = _shape.iter().product();
         if shape_product != *_capacity {
             panic!(
@@ -36,10 +37,20 @@ impl StaticArray {
         }
         for (i, &index) in indices.iter().enumerate() {
             if index >= self.shape[i] {
-                panic!("Index out of bounds for dimension {}: {} >= {}", i, index, self.shape[i]);
+                panic!(
+                    "Index out of bounds for dimension {}: {} >= {}",
+                    i, index, self.shape[i]
+                );
             }
         }
         true
+    }
+    fn _calculate_strides(&self) -> Vec<usize> {
+        let mut strides: Vec<usize> = vec![1; self.shape.len()];
+        for i in (0..self.shape.len() - 1).rev() {
+            strides[i] = strides[i + 1] * self.shape[i + 1];
+        }
+        strides
     }
 
     fn _calculate_flat_index(&self, indices: &[usize]) -> usize {
@@ -75,15 +86,42 @@ impl StaticArray {
         }
     }
 
-    pub fn get_at(&self, indices: &[usize]) -> f32 {
+    pub fn get_element_at(&self, indices: &[usize]) -> f32 {
         self._check_index_within_bounds(indices);
         let flat_index: usize = self._calculate_flat_index(indices);
         self.data[flat_index]
     }
 
-    // pub fn get_slice() -> StaticArray {
-
-    // }
+    pub fn get_subarray(&self, access_index: &[usize]) -> StaticArray {
+        match access_index.len().cmp(&self.shape.len()) {
+            std::cmp::Ordering::Greater => {
+                panic!("The requested subarray is out of the bounds of the array to be sliced");
+            }
+            std::cmp::Ordering::Equal => {
+                panic!(
+                    "The requested subarray returns a unique element from the Array. Use 
+                    get_element_at() instead."
+                );
+            }
+            std::cmp::Ordering::Less => {
+                let ret_shape: &[usize] = &self.shape[access_index.len()..];
+                let ret_capacity: usize = ret_shape.iter().product();
+                let strides: Vec<usize> = self._calculate_strides();
+                let start_index: usize = access_index
+                    .iter()
+                    .zip(&strides)
+                    .map(|(i, s)| i * s)
+                    .sum::<usize>();
+                let data: Vec<f32> = self.data[start_index..start_index + ret_capacity].to_vec();
+                println!("Output size: {:?}", ret_shape);
+                StaticArray {
+                    capacity: ret_capacity,
+                    data,
+                    shape: Vec::from(ret_shape),
+                }
+            }
+        }
+    }
 
     // pub fn get_from_to() -> StaticArray {
 
@@ -92,6 +130,15 @@ impl StaticArray {
     // pub fn get_view() -> StaticArray {
 
     // }
+}
+
+impl PartialEq<StaticArray> for StaticArray {
+    fn eq(&self, other: &StaticArray) -> bool {
+        let mut ret: bool = true;
+        ret &= self.data == other.data;
+        ret &= self.shape == other.shape;
+        ret
+    }
 }
 
 #[cfg(test)]
@@ -183,7 +230,7 @@ mod tests {
         capacity = 5;
         StaticArray::_check_shape_capacity_match(&capacity, &shape);
     }
-    
+
     #[test]
     #[should_panic]
     fn test_check_index_within_bounds() {
@@ -211,20 +258,102 @@ mod tests {
         assert_eq!(array._calculate_flat_index(&Vec::from([1, 0])), 3);
         assert_eq!(array._calculate_flat_index(&Vec::from([1, 1])), 4);
         assert_eq!(array._calculate_flat_index(&Vec::from([1, 2])), 5);
-    }   
+    }
 
     #[test]
-    fn test_get_static_array_element() {
+    fn test_get_element_at_static_array_element() {
         let array: StaticArray = StaticArray {
             capacity: 6,
             data: Vec::from([1., 2., 3., 4., 5., 6.]),
             shape: Vec::from([2, 3]),
         };
-        assert_eq!(array.get_at(&[0, 0]), 1.);
-        assert_eq!(array.get_at(&[0, 1]), 2.);
-        assert_eq!(array.get_at(&[0, 2]), 3.);
-        assert_eq!(array.get_at(&[1, 0]), 4.);
-        assert_eq!(array.get_at(&[1, 1]), 5.);
-        assert_eq!(array.get_at(&[1, 2]), 6.);
+        assert_eq!(array.get_element_at(&[0, 0]), 1.);
+        assert_eq!(array.get_element_at(&[0, 1]), 2.);
+        assert_eq!(array.get_element_at(&[0, 2]), 3.);
+        assert_eq!(array.get_element_at(&[1, 0]), 4.);
+        assert_eq!(array.get_element_at(&[1, 1]), 5.);
+        assert_eq!(array.get_element_at(&[1, 2]), 6.);
+    }
+
+    #[test]
+    fn test_get_subarray_static_array_2d() {
+        let array: StaticArray = StaticArray {
+            capacity: 6,
+            data: Vec::from([1., 2., 3., 4., 5., 6.]),
+            shape: Vec::from([2, 3]),
+        };
+        let ref_array_0: StaticArray = StaticArray {
+            capacity: 3,
+            data: Vec::from([1., 2., 3.]),
+            shape: Vec::from([3]),
+        };
+        let ref_array_1: StaticArray = StaticArray {
+            capacity: 3,
+            data: Vec::from([4., 5., 6.]),
+            shape: Vec::from([3]),
+        };
+        assert_eq!(array.get_subarray(&[0]), ref_array_0);
+        assert_eq!(array.get_subarray(&[1]), ref_array_1);
+    }
+
+    #[test]
+    fn test_get_subarray_static_array_3d() {
+        let array: StaticArray = StaticArray {
+            capacity: 6,
+            data: Vec::from([1., 2., 3., 4., 5., 6., 7., 8.]),
+            shape: Vec::from([2, 2, 2]),
+        };
+
+        let ref_array_00: StaticArray = StaticArray {
+            capacity: 2,
+            data: Vec::from([1., 2.]),
+            shape: Vec::from([2]),
+        };
+        assert_eq!(array.get_subarray(&[0, 0]), ref_array_00);
+
+        let ref_array_01: StaticArray = StaticArray {
+            capacity: 2,
+            data: Vec::from([3., 4.]),
+            shape: Vec::from([2]),
+        };
+        assert_eq!(array.get_subarray(&[0, 1]), ref_array_01);
+
+        let ref_array_10: StaticArray = StaticArray {
+            capacity: 2,
+            data: Vec::from([5., 6.]),
+            shape: Vec::from([2]),
+        };
+        assert_eq!(array.get_subarray(&[1, 0]), ref_array_10);
+
+        let ref_array_11: StaticArray = StaticArray {
+            capacity: 2,
+            data: Vec::from([7., 8.]),
+            shape: Vec::from([2]),
+        };
+        assert_eq!(array.get_subarray(&[1, 1]), ref_array_11);
+
+        let ref_array_0: StaticArray = StaticArray {
+            capacity: 4,
+            data: Vec::from([1., 2., 3., 4.]),
+            shape: Vec::from([2, 2]),
+        };
+        assert_eq!(array.get_subarray(&[0]), ref_array_0);
+
+        let ref_array_1: StaticArray = StaticArray {
+            capacity: 4,
+            data: Vec::from([5., 6., 7., 8.]),
+            shape: Vec::from([2, 2]),
+        };
+        assert_eq!(array.get_subarray(&[1]), ref_array_1);
+    }
+
+    #[test]
+    fn test_strides() {
+        let array: StaticArray = StaticArray::new_zeros(Vec::from([2]));
+        assert_eq!(array._calculate_strides(), Vec::from([1]));
+        let array: StaticArray = StaticArray::new_zeros(Vec::from([2, 3]));
+        assert_eq!(array._calculate_strides(), Vec::from([3, 1]));
+        let array: StaticArray = StaticArray::new_zeros(Vec::from([2, 3, 5]));
+        assert_eq!(array._calculate_strides(), Vec::from([15, 5, 1]));
     }
 }
