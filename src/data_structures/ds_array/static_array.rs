@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 /// We define an static array as a data structure consisting of a collection of elements (values or
 /// variables), of same memory size, each identified by at least one array index or key. The key
 /// property that defines the array as static is the fact of having a fixed length (or size) defined
@@ -31,11 +33,11 @@ impl StaticArray {
         true
     }
 
-    fn _check_index_within_bounds(&self, indices: &[usize]) -> bool {
-        if indices.len() != self.shape.len() {
+    fn _check_index_within_bounds(&self, _access_index: &[usize]) -> bool {
+        if _access_index.len() != self.shape.len() {
             panic!("Number of indices does not match the shape dimensions");
         }
-        for (i, &index) in indices.iter().enumerate() {
+        for (i, &index) in _access_index.iter().enumerate() {
             if index >= self.shape[i] {
                 panic!(
                     "Index out of bounds for dimension {}: {} >= {}",
@@ -45,12 +47,25 @@ impl StaticArray {
         }
         true
     }
+
     fn _calculate_strides(&self) -> Vec<usize> {
         let mut strides: Vec<usize> = vec![1; self.shape.len()];
         for i in (0..self.shape.len() - 1).rev() {
             strides[i] = strides[i + 1] * self.shape[i + 1];
         }
         strides
+    }
+
+    fn _check_end_index_greater_than_start_index(
+        &self,
+        _start_index: &[usize],
+        _end_index: &[usize],
+    ) -> bool {
+        if self._calculate_flat_index(_start_index) <= self._calculate_flat_index(_end_index) {
+            true
+        } else {
+            panic!("The start index is greater than the end index");
+        }
     }
 
     fn _calculate_flat_index(&self, indices: &[usize]) -> usize {
@@ -86,10 +101,35 @@ impl StaticArray {
         }
     }
 
-    pub fn get_element_at(&self, indices: &[usize]) -> f32 {
-        self._check_index_within_bounds(indices);
-        let flat_index: usize = self._calculate_flat_index(indices);
+    pub fn reshape(&mut self, new_shape: Vec<usize>) {
+        let new_capacity: usize = new_shape.iter().product();
+        if new_capacity != self.capacity {
+            panic!("New shape must have the same number of elements as the old shape");
+        }
+        self.shape = new_shape;
+    }
+
+    pub fn get_element_at(&self, access_index: &[usize]) -> f32 {
+        self._check_index_within_bounds(access_index);
+        let flat_index: usize = self._calculate_flat_index(access_index);
         self.data[flat_index]
+    }
+
+    pub fn get_elements_slice(
+        &self,
+        access_index_start: &[usize],
+        access_index_end: &[usize],
+    ) -> &[f32] {
+        let ret_check_indices: bool =
+            self._check_end_index_greater_than_start_index(access_index_start, access_index_end);
+        if !ret_check_indices {
+            panic!("The start index is greater than the end index");
+        };
+        self._check_index_within_bounds(access_index_start);
+        self._check_index_within_bounds(access_index_end);
+        let start_index: usize = self._calculate_flat_index(access_index_start);
+        let end_index: usize = self._calculate_flat_index(access_index_end);
+        &self.data[start_index..end_index]
     }
 
     pub fn get_subarray(&self, access_index: &[usize]) -> StaticArray {
@@ -123,13 +163,15 @@ impl StaticArray {
         }
     }
 
-    // pub fn get_from_to() -> StaticArray {
-
-    // }
-
-    // pub fn get_view() -> StaticArray {
-
-    // }
+    pub fn get_view(&self, new_shape: Vec<usize>) -> StaticArray {
+        let new_capacity: usize = new_shape.iter().product();
+        Self::_check_shape_capacity_match(&self.capacity, &new_shape);
+        StaticArray {
+            capacity: new_capacity,
+            data: self.data.clone(),
+            shape: new_shape,
+        }
+    }
 }
 
 impl PartialEq<StaticArray> for StaticArray {
@@ -138,6 +180,24 @@ impl PartialEq<StaticArray> for StaticArray {
         ret &= self.data == other.data;
         ret &= self.shape == other.shape;
         ret
+    }
+}
+
+impl Index<&[usize]> for StaticArray {
+    type Output = f32;
+
+    fn index(&self, index: &[usize]) -> &Self::Output {
+        self._check_index_within_bounds(index);
+        let flat_index: usize = self._calculate_flat_index(index);
+        &self.data[flat_index]
+    }
+}
+
+impl IndexMut<&[usize]> for StaticArray {
+    fn index_mut(&mut self, index: &[usize]) -> &mut Self::Output {
+        self._check_index_within_bounds(index);
+        let flat_index: usize = self._calculate_flat_index(index);
+        &mut self.data[flat_index]
     }
 }
 
@@ -355,5 +415,104 @@ mod tests {
         assert_eq!(array._calculate_strides(), Vec::from([3, 1]));
         let array: StaticArray = StaticArray::new_zeros(Vec::from([2, 3, 5]));
         assert_eq!(array._calculate_strides(), Vec::from([15, 5, 1]));
+    }
+
+    #[test]
+    fn test_get_view() {
+        let array: StaticArray = StaticArray::new_zeros(Vec::from([2, 3]));
+        let ref_array: StaticArray = StaticArray::new_zeros(Vec::from([3, 2]));
+        assert_eq!(array.get_view(Vec::from([3, 2])), ref_array);
+    }
+
+    #[test]
+    fn test_get_elements_slice() {
+        let array: StaticArray = StaticArray {
+            capacity: 6,
+            data: Vec::from([1., 2., 3., 4., 5., 6.]),
+            shape: Vec::from([2, 3]),
+        };
+        let slice: &[f32] = array.get_elements_slice(&[0, 0], &[0, 2]);
+        assert_eq!(slice, &[1., 2.]);
+
+        let slice: &[f32] = array.get_elements_slice(&[0, 1], &[1, 0]);
+        assert_eq!(slice, &[2., 3.]);
+
+        let slice: &[f32] = array.get_elements_slice(&[1, 0], &[1, 2]);
+        assert_eq!(slice, &[4., 5.]);
+
+        let slice: &[f32] = array.get_elements_slice(&[0, 0], &[1, 1]);
+        assert_eq!(slice, &[1., 2., 3., 4.]);
+    }
+
+    #[test]
+    fn test_index_accessor() {
+        let array: StaticArray = StaticArray {
+            capacity: 6,
+            data: Vec::from([1., 2., 3., 4., 5., 6.]),
+            shape: Vec::from([2, 3]),
+        };
+        assert_eq!(array[&[0, 0]], 1.);
+        assert_eq!(array[&[0, 1]], 2.);
+        assert_eq!(array[&[0, 2]], 3.);
+        assert_eq!(array[&[1, 0]], 4.);
+        assert_eq!(array[&[1, 1]], 5.);
+        assert_eq!(array[&[1, 2]], 6.);
+    }
+
+    #[test]
+    fn test_index_mut_accessor() {
+        let mut array: StaticArray = StaticArray {
+            capacity: 6,
+            data: Vec::from([1., 2., 3., 4., 5., 6.]),
+            shape: Vec::from([2, 3]),
+        };
+        array[&[0, 0]] = 10.;
+        array[&[0, 1]] = 20.;
+        array[&[0, 2]] = 30.;
+        array[&[1, 0]] = 40.;
+        array[&[1, 1]] = 50.;
+        array[&[1, 2]] = 60.;
+        assert_eq!(array[&[0, 0]], 10.);
+        assert_eq!(array[&[0, 1]], 20.);
+        assert_eq!(array[&[0, 2]], 30.);
+        assert_eq!(array[&[1, 0]], 40.);
+        assert_eq!(array[&[1, 1]], 50.);
+        assert_eq!(array[&[1, 2]], 60.);
+    }
+
+    #[test]
+    fn test_static_array_mutability() {
+        let mut array: StaticArray = StaticArray::new_zeros(Vec::from([2, 2]));
+        array[&[0, 0]] = 1.0;
+        array[&[0, 1]] = 2.0;
+        array[&[1, 0]] = 3.0;
+        array[&[1, 1]] = 4.0;
+        assert_eq!(array[&[0, 0]], 1.0);
+        assert_eq!(array[&[0, 1]], 2.0);
+        assert_eq!(array[&[1, 0]], 3.0);
+        assert_eq!(array[&[1, 1]], 4.0);
+    }
+
+    #[test]
+    fn test_static_array_capacity_immutability() {
+        let array: StaticArray = StaticArray::new_zeros(Vec::from([2, 2]));
+        assert_eq!(array.capacity, 4);
+        // Attempting to change capacity should not be possible
+        // array.capacity = 5; // This line should cause a compile-time error
+    }
+
+    #[test]
+    fn test_reshape_method() {
+        let mut array: StaticArray = StaticArray::new_zeros(Vec::from([2, 2]));
+        array.reshape(Vec::from([4]));
+        assert_eq!(array.shape, Vec::from([4]));
+        assert_eq!(array.capacity, 4);
+        assert_eq!(array.data, Vec::from([0.0, 0.0, 0.0, 0.0]));
+
+        let mut array: StaticArray = StaticArray::new_zeros(Vec::from([4]));
+        array.reshape(Vec::from([2, 2]));
+        assert_eq!(array.shape, Vec::from([2, 2]));
+        assert_eq!(array.capacity, 4);
+        assert_eq!(array.data, Vec::from([0.0, 0.0, 0.0, 0.0]));
     }
 }
