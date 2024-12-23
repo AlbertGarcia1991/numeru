@@ -1,13 +1,13 @@
-/// We define an static array as a data structure consisting of a collection of elements (values or 
-/// variables), of same memory size, each identified by at least one array index or key. The key 
+/// We define an static array as a data structure consisting of a collection of elements (values or
+/// variables), of same memory size, each identified by at least one array index or key. The key
 /// property that defines the array as static is the fact of having a fixed length (or size) defined
 /// when is created, whether or not the elements inside are immutable.
-/// 
+///
 /// Hence, we will define a static array as a struct with the following attributes:
 ///     - capacity (mandatory): usize indicating the amount of elements to be stored.
 ///     - data (mandatory): Box<[f32]> containing the value of the elements.
 ///     - shape (optional): [usize; N] View of the array. By default is 1D, hence, [usize; 1].
-/// 
+///
 use std::alloc::{alloc, Layout};
 
 struct StaticArray {
@@ -36,19 +36,22 @@ impl StaticArray {
         }
 
         // Convert the raw pointer to a Box<[f32]> to ensure it is properly deallocated
-        unsafe { 
+        unsafe {
             StaticArray {
-                capacity:capacity,
+                capacity,
                 data: Box::from_raw(std::slice::from_raw_parts_mut(ptr, capacity)),
-                shape: shape,
-        }}
+                shape,
+            }
+        }
     }
 
-    fn _check_shape_capacity_match(_capacity: &usize, _shape: &Box<[usize]>) {
+    fn _check_shape_capacity_match(_capacity: &usize, _shape: &[usize]) {
         let shape_product: usize = _shape.iter().product();
         if shape_product != *_capacity {
-            panic!("The given input array and shape does not match in capacity: {} != {}", 
-                    shape_product, *_capacity);
+            panic!(
+                "The given input array and shape does not match in capacity: {} != {}",
+                shape_product, *_capacity
+            );
         }
     }
 
@@ -60,7 +63,7 @@ impl StaticArray {
         Self::_new_array(1., shape)
     }
 
-    pub fn new_fill(shape: Box<[usize]>, fill_value:f32) -> Self {
+    pub fn new_fill(shape: Box<[usize]>, fill_value: f32) -> Self {
         Self::_new_array(fill_value, shape)
     }
 
@@ -68,28 +71,24 @@ impl StaticArray {
         let capacity: usize = values.len();
 
         let shape: Box<[usize]> = shape.unwrap_or_else(|| Box::new([capacity]));
- 
+
         StaticArray {
             capacity,
             data: values, // Move the input Box<[f32]> into data
             shape,
         }
-
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::Empty;
-
     use super::*;
 
     #[test]
     fn create_static_array_without_constructor() {
-        let values: Box<[f32]> = Box::new([10.]);
-        let static_array: StaticArray = StaticArray{
+        let static_array: StaticArray = StaticArray {
             capacity: 1,
-            data: values,
+            data: Box::new([10.]),
             shape: Box::new([1]),
         };
         let values: Box<[f32]> = Box::new([10.]);
@@ -98,10 +97,9 @@ mod tests {
 
     #[test]
     fn create_static_array_with_zeros() {
-        let values: Box<[f32]> = Box::new([0., 0.]);
         let ref_array: StaticArray = StaticArray {
             capacity: 2,
-            data: values,
+            data: Box::new([0., 0.]),
             shape: Box::new([1, 2]),
         };
         let array: StaticArray = StaticArray::new_zeros(Box::new([1, 2]));
@@ -112,10 +110,9 @@ mod tests {
 
     #[test]
     fn create_static_array_with_ones() {
-        let values: Box<[f32]> = Box::new([1., 1., 1., 1.]);
         let ref_array: StaticArray = StaticArray {
             capacity: 4,
-            data: values,
+            data: Box::new([1., 1., 1., 1.]),
             shape: Box::new([2, 2]),
         };
         let array: StaticArray = StaticArray::new_ones(Box::new([2, 2]));
@@ -126,14 +123,12 @@ mod tests {
 
     #[test]
     fn create_static_array_with_fill() {
-        let values: Box<[f32]> = Box::new([3.14, 3.14]);
         let ref_array: StaticArray = StaticArray {
             capacity: 2,
-            data: values,
+            data: Box::new([3.14, 3.14]),
             shape: Box::new([2, 1]),
         };
-        let array: StaticArray = StaticArray::new_fill(
-            Box::new([2, 1]), 3.14);
+        let array: StaticArray = StaticArray::new_fill(Box::new([2, 1]), 3.14);
         assert_eq!(ref_array.capacity, array.capacity);
         assert_eq!(ref_array.data, array.data);
         assert_eq!(ref_array.shape, array.shape);
@@ -141,10 +136,9 @@ mod tests {
 
     #[test]
     fn create_static_array_from_array() {
-        let values: Box<[f32]> = Box::new([1., 2., 3., 4., 5., 6.]);
         let ref_array: StaticArray = StaticArray {
             capacity: 6,
-            data: values,
+            data: Box::new([1., 2., 3., 4., 5., 6.]),
             shape: Box::new([2, 3]),
         };
         let values: Box<[f32]> = Box::new([1., 2., 3., 4., 5., 6.]);
